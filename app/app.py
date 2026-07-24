@@ -16,19 +16,26 @@ scaler     = joblib.load('model/scaler.pkl')
 
 print("All models loaded successfully!")
 
-# ─── ROUTES ───────────────────────────────────────────
+# ─── PAGE ROUTES ──────────────────────────────────────
 
 @app.route('/')
 def home():
     return render_template('index.html')
 
+@app.route('/predict-page')
+def predict_page():
+    return render_template('predict.html')
 
-# 1. XGBoost Prediction
+@app.route('/anomaly-page')
+def anomaly_page():
+    return render_template('anomaly.html')
+
+# ─── API ROUTES ───────────────────────────────────────
+
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
         data = request.get_json()
-
         input_df = pd.DataFrame([{
             'Store':          data['store'],
             'Dept':           data['dept'],
@@ -45,29 +52,23 @@ def predict():
             'Type_Encoded':   data['type_encoded'],
             'Total_MarkDown': data['total_markdown']
         }])
-
         prediction = np.expm1(xgb_model.predict(input_df)[0])
-
         return jsonify({
             'status': 'success',
             'predicted_weekly_sales': round(float(prediction), 2)
         })
-
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 400
 
 
-# 2. Anomaly Detection
 @app.route('/anomaly', methods=['POST'])
 def anomaly():
     try:
         data = request.get_json()
         sales = np.array(data['sales']).reshape(-1, 1)
-
         sales_scaled = scaler.transform(sales)
         predictions  = iso_model.predict(sales_scaled)
         scores       = iso_model.score_samples(sales_scaled)
-
         results = []
         for i, (pred, score) in enumerate(zip(predictions, scores)):
             results.append({
@@ -76,21 +77,17 @@ def anomaly():
                 'is_anomaly': bool(pred == -1),
                 'score':      round(float(score), 4)
             })
-
         anomaly_count = sum(1 for r in results if r['is_anomaly'])
-
         return jsonify({
             'status':        'success',
             'total_points':  len(results),
             'anomaly_count': anomaly_count,
             'results':       results
         })
-
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 400
 
 
-# 3. Health Check
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anomaly Detection</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; }
+        .navbar { background: #1e293b; border-bottom: 1px solid #334155; }
+        .page-header { background: linear-gradient(135deg, #1e3a5f, #0f172a); padding: 50px 0 40px; text-align: center; }
+        .page-header h1 { color: #f59e0b; font-weight: 700; }
+        .page-header p  { color: #94a3b8; }
+        .form-card { background: #1e293b; border-radius: 12px; padding: 35px; border: 1px solid #334155; }
+        .form-label { color: #94a3b8; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-control { background: #0f172a; border: 1px solid #334155; color: #e2e8f0; border-radius: 8px; }
+        .form-control:focus { background: #0f172a; border-color: #f59e0b; color: #e2e8f0; box-shadow: 0 0 0 3px rgba(245,158,11,0.1); }
+        .form-control::placeholder { color: #475569; }
+        .btn-detect { background: #d97706; border: none; padding: 14px; font-size: 1rem; font-weight: 600; border-radius: 8px; width: 100%; transition: background 0.2s; }
+        .btn-detect:hover { background: #b45309; }
+        .tip-box { background: #162032; border-radius: 8px; padding: 15px; border-left: 3px solid #f59e0b; margin-bottom: 25px; font-size: 0.85rem; color: #94a3b8; }
+        .result-item { background: #0f172a; border-radius: 8px; padding: 15px; margin-bottom: 10px; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+        .result-item.anomaly { border-color: #ef4444; background: #1a0a0a; }
+        .result-item.normal  { border-color: #22c55e; background: #0a1a0a; }
+        .badge-anomaly { background: #ef4444; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; }
+        .badge-normal  { background: #22c55e; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; }
+        .summary-box { background: #0f172a; border-radius: 12px; padding: 25px; border: 1px solid #334155; text-align: center; margin-bottom: 20px; display: none; }
+        .summary-box .big { font-size: 2.5rem; font-weight: 700; }
+        .stat-row { display: flex; justify-content: space-around; margin-top: 15px; }
+        .stat-item .val { font-size: 1.5rem; font-weight: 700; }
+        .stat-item .lbl { color: #94a3b8; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-dark">
+    <div class="container">
+        <a href="/" class="navbar-brand fw-bold" style="color:#38bdf8;">
+            <i class="fas fa-chart-line me-2"></i>SalesForecast AI
+        </a>
+        <div>
+            <a href="/predict-page" class="btn btn-sm btn-outline-info me-2">Predict</a>
+            <a href="/anomaly-page" class="btn btn-sm btn-warning">Anomaly</a>
+        </div>
+    </div>
+</nav>
+
+<!-- HEADER -->
+<div class="page-header">
+    <div class="container">
+        <h1><i class="fas fa-exclamation-triangle me-3"></i>Anomaly Detection</h1>
+        <p>Paste weekly sales values to detect unusual spikes or drops using Isolation Forest</p>
+    </div>
+</div>
+
+<!-- MAIN -->
+<div class="container py-5">
+    <div class="row g-4">
+
+        <!-- INPUT -->
+        <div class="col-lg-5">
+            <div class="form-card">
+                <div class="tip-box">
+                    💡 Enter weekly sales values separated by commas. The model will flag unusual spikes or drops as anomalies.
+                </div>
+
+                <label class="form-label">Weekly Sales Values</label>
+                <textarea id="sales-input" class="form-control" rows="8"
+                    placeholder="e.g. 45000000, 46000000, 80000000, 44000000, 43000000"></textarea>
+
+                <div class="mt-3 mb-3">
+                    <button class="btn btn-outline-warning btn-sm w-100" onclick="fillSample()">
+                        <i class="fas fa-lightbulb me-2"></i>Fill Sample Data
+                    </button>
+                </div>
+
+                <button class="btn btn-detect text-white mt-2" onclick="detect()">
+                    <i class="fas fa-search me-2"></i>Detect Anomalies
+                </button>
+
+                <!-- Info -->
+                <div class="mt-4 p-3" style="background:#0f172a; border-radius:8px; font-size:0.8rem; color:#94a3b8;">
+                    <div class="mb-2" style="color:#f59e0b; font-weight:600;">How it works:</div>
+                    <div>• Isolation Forest isolates observations by randomly selecting a feature and split value</div>
+                    <div class="mt-1">• Anomalies are isolated faster (shorter path) than normal points</div>
+                    <div class="mt-1">• Score closer to -1 = more anomalous</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESULTS -->
+        <div class="col-lg-7">
+
+            <!-- Summary -->
+            <div id="summary-box" class="summary-box">
+                <div class="stat-row">
+                    <div class="stat-item">
+                        <div class="val" id="total-count" style="color:#38bdf8;">-</div>
+                        <div class="lbl">Total Points</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="val" id="anomaly-count" style="color:#ef4444;">-</div>
+                        <div class="lbl">Anomalies</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="val" id="normal-count" style="color:#22c55e;">-</div>
+                        <div class="lbl">Normal</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results List -->
+            <div class="form-card">
+                <h5 style="color:#f1f5f9; margin-bottom:20px;">
+                    <i class="fas fa-list me-2" style="color:#f59e0b;"></i>Detection Results
+                </h5>
+                <div id="results-list">
+                    <div style="text-align:center; color:#475569; padding:40px 0;">
+                        <i class="fas fa-search fa-2x mb-3"></i>
+                        <p>Enter sales values and click Detect Anomalies</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function fillSample() {
+    document.getElementById('sales-input').value =
+        '45000000, 46000000, 80000000, 44000000, 43000000, 47000000, 65000000, 42000000, 44000000, 81000000';
+}
+
+async function detect() {
+    const raw = document.getElementById('sales-input').value;
+    const sales = raw.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+
+    if (sales.length < 3) {
+        alert('Please enter at least 3 sales values.');
+        return;
+    }
+
+    try {
+        const response = await fetch('/anomaly', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sales })
+        });
+        const data = await response.json();
+
+        if (data.status !== 'success') {
+            alert('Error: ' + data.message);
+            return;
+        }
+
+        // Summary
+        const summaryBox = document.getElementById('summary-box');
+        summaryBox.style.display = 'block';
+        document.getElementById('total-count').textContent   = data.total_points;
+        document.getElementById('anomaly-count').textContent = data.anomaly_count;
+        document.getElementById('normal-count').textContent  = data.total_points - data.anomaly_count;
+
+        // Results list
+        const list = document.getElementById('results-list');
+        list.innerHTML = '';
+
+        data.results.forEach(r => {
+            const cls  = r.is_anomaly ? 'anomaly' : 'normal';
+            const badge = r.is_anomaly
+                ? '<span class="badge-anomaly">🚨 Anomaly</span>'
+                : '<span class="badge-normal">✅ Normal</span>';
+
+            list.innerHTML += `
+                <div class="result-item ${cls}">
+                    <div>
+                        <div style="font-weight:600; color:#f1f5f9;">
+                            Week ${r.index + 1}
+                        </div>
+                        <div style="color:#94a3b8; font-size:0.85rem;">
+                            Sales: $${r.sales.toLocaleString()} &nbsp;|&nbsp; Score: ${r.score}
+                        </div>
+                    </div>
+                    <div>${badge}</div>
+                </div>
+            `;
+        });
+
+    } catch (err) {
+        alert('Error connecting to API: ' + err.message);
+    }
+}
+</script>
+</body>
+</html>
