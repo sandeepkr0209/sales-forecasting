@@ -250,5 +250,4 @@ Open browser → `http://127.0.0.1:5000`
 
 **Sandeep Kumar**
 - GitHub: [@sandeepkr0209](https://github.com/sandeepkr0209)
-- LinkedIn: [sandeepkumar-69241b256](https://linkedin.com/in/sandeepkumar-69241b256)
 - Email: sankrdeep7510@gmail.com
