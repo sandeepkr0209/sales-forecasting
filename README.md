@@ -8,7 +8,7 @@ An end-to-end Data Science project for retail sales forecasting and anomaly dete
 ![Status](https://img.shields.io/badge/Status-Live-brightgreen)
 
 ## 🔗 Live Demo
-👉 **[Click here to try the app](#)** ← replace with Render URL after deployment
+👉 **[Click here to try the app](https://sales-forecasting-qo03.onrender.com/)** ← replace with Render URL after deployment
 
 ---
 
