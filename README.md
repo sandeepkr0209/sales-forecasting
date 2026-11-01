@@ -1,4 +1,4 @@
-# 🛒 Walmart Sales Forecasting & Anomaly Detection
+# Sales Forecasting & Anomaly Detection
 
 An end-to-end Data Science project for retail sales forecasting and anomaly detection using Machine Learning, deployed as a web application.
 
@@ -14,7 +14,7 @@ An end-to-end Data Science project for retail sales forecasting and anomaly dete
 
 ## 📌 Project Overview
 
-This project builds a complete sales forecasting system on the **Walmart Store Sales dataset (421K rows)** covering 45 stores and 99 departments from 2010–2012.
+This project builds a complete sales forecasting system on the Store Sales dataset (421K rows).
 
 ### What it does:
 - **Forecasts weekly sales** at store-department level using XGBoost
