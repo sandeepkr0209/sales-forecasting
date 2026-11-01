@@ -28,7 +28,7 @@ This project builds a complete sales forecasting system on the Store Sales datas
 
 | Property | Value |
 |---|---|
-| Source | Walmart Store Sales (Kaggle) |
+| Source |   Store Sales (Kaggle) |
 | Size | 421,570 rows |
 | Stores | 45 |
 | Departments | 99 |
@@ -132,7 +132,7 @@ sales-forecasting/
 │       └── anomaly.html              ← Anomaly Detection Page
 │
 ├── data/
-│   └── walmart_clean.csv
+│   └──  _clean.csv
 │
 ├── images/                           ← EDA and model plots
 ├── requirements.txt
